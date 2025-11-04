@@ -163,39 +163,49 @@ static int lis2du12_accel_range_set(const struct device *dev, int32_t range)
 	return 0;
 }
 
-static int lis2du12_accel_config(const struct device *dev,
-				 enum sensor_channel chan,
-				 enum sensor_attribute attr,
-				 const struct sensor_value *val)
-{
-	switch (attr) {
-	case SENSOR_ATTR_FULL_SCALE:
-		return lis2du12_accel_range_set(dev, sensor_ms2_to_g(val));
-	case SENSOR_ATTR_SAMPLING_FREQUENCY:
-		return lis2du12_accel_odr_set(dev, val->val1);
-	default:
-		LOG_WRN("Accel attribute %d not supported.", attr);
-		return -ENOTSUP;
-	}
-
-	return 0;
-}
-
 static int lis2du12_attr_set(const struct device *dev,
 			     enum sensor_channel chan,
 			     enum sensor_attribute attr,
 			     const struct sensor_value *val)
 {
-	switch (chan) {
-	case SENSOR_CHAN_ACCEL_XYZ:
-		return lis2du12_accel_config(dev, chan, attr, val);
+	int ret = 0;
+
+	switch (attr) {
+	case SENSOR_ATTR_UPPER_THRESH: /* Tap threshold */
+		switch (chan) {
+		case SENSOR_CHAN_ACCEL_X:
+			ret = lis2du12_set_tap_x_threshold(dev, (uint8_t)val->val1);
+			break;
+		case SENSOR_CHAN_ACCEL_Y:
+			ret = lis2du12_set_tap_y_threshold(dev, (uint8_t)val->val1);
+			break;
+		case SENSOR_CHAN_ACCEL_Z:
+			ret = lis2du12_set_tap_z_threshold(dev, (uint8_t)val->val1);
+			break;
+		case SENSOR_CHAN_ACCEL_XYZ:
+			ret = lis2du12_set_tap_all_threshold(dev, (uint8_t)val->val1);
+			break;
+		default:
+			LOG_WRN("Invalid channel (%d) for tap threshold.", chan);
+			ret = -ENOTSUP;
+			break;
+		}
+		break;
+	case SENSOR_ATTR_FULL_SCALE:
+		ret = lis2du12_accel_range_set(dev, sensor_ms2_to_g(val));
+		break;
+	case SENSOR_ATTR_SAMPLING_FREQUENCY:
+		ret = lis2du12_accel_odr_set(dev, val->val1);
+		break;
 	default:
-		LOG_WRN("attribute %d not supported on this channel.", chan);
-		return -ENOTSUP;
+		LOG_WRN("attribute is not supported");
+		ret = -ENOTSUP;
+		break;
 	}
 
-	return 0;
+	return ret;
 }
+
 
 static int lis2du12_sample_fetch_accel(const struct device *dev)
 {
@@ -385,10 +395,25 @@ static int lis2du12_init(const struct device *dev)
 	return 0;
 }
 
+
 /*
  * Device creation macro, shared by LIS2DU12_DEFINE_SPI() and
  * LIS2DU12_DEFINE_I2C().
  */
+
+
+#define LIS2DU12_CONFIG_TAP(inst)					\
+	.tap_x_en = DT_INST_PROP(inst, tap_x_en),        \
+	.tap_y_en = DT_INST_PROP(inst, tap_y_en),        \
+	.tap_z_en = DT_INST_PROP(inst, tap_z_en),        \
+	.tap_mode = DT_INST_PROP(inst, tap_mode),			\
+	.tap_threshold = DT_INST_PROP(inst, tap_threshold),		\
+	.tap_shock = DT_INST_PROP(inst, tap_shock),			\
+	.tap_latency = DT_INST_PROP(inst, tap_latency),			\
+	.tap_quiet = DT_INST_PROP(inst, tap_quiet),            \
+	.tap_axis_priority = DT_INST_PROP(inst, tap_axis_priority),
+
+
 
 #define LIS2DU12_DEVICE_INIT(inst)					\
 	SENSOR_DEVICE_DT_INST_DEFINE(inst,				\
@@ -423,6 +448,7 @@ static int lis2du12_init(const struct device *dev)
 #define LIS2DU12_CONFIG_COMMON(inst)					\
 	.accel_odr = DT_INST_PROP(inst, accel_odr),			\
 	.accel_range = DT_INST_PROP(inst, accel_range),			\
+	LIS2DU12_CONFIG_TAP(inst)					\
 	IF_ENABLED(UTIL_OR(DT_INST_NODE_HAS_PROP(inst, int1_gpios),	\
 			   DT_INST_NODE_HAS_PROP(inst, int2_gpios)),	\
 		   (LIS2DU12_CFG_IRQ(inst)))

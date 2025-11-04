@@ -53,6 +53,16 @@ struct lis2du12_config {
 	const struct gpio_dt_spec int2_gpio;
 	uint8_t drdy_pin;
 	bool trig_enabled;
+// #ifdef CONFIG_LIS2DU12_TAP
+	uint8_t tap_x_en;
+	uint8_t tap_y_en;
+	uint8_t tap_z_en;
+	uint8_t tap_mode; //zero on single tap. 1 on double tap
+	uint8_t tap_threshold[3];
+	uint8_t tap_shock;
+	uint8_t tap_latency;
+	uint8_t tap_quiet;
+	uint8_t tap_axis_priority;
 #endif /* CONFIG_LIS2DU12_TRIGGER */
 };
 
@@ -71,7 +81,7 @@ struct lis2du12_data {
 	uint8_t accel_fs;
 
 #ifdef CONFIG_LIS2DU12_TRIGGER
-	struct gpio_dt_spec *drdy_gpio;
+	struct gpio_dt_spec *drdy_gpio; //TODO: rename drdy_gpio as it's now used for tap detection as well.
 
 	struct gpio_callback gpio_cb;
 	sensor_trigger_handler_t handler_drdy_acc;
@@ -84,6 +94,11 @@ struct lis2du12_data {
 #elif defined(CONFIG_LIS2DU12_TRIGGER_GLOBAL_THREAD)
 	struct k_work work;
 #endif
+//#ifdef CONFIG_LIS2DU12_TAP
+	sensor_trigger_handler_t tap_handler;
+	const struct sensor_trigger *tap_trig;
+	sensor_trigger_handler_t double_tap_handler;
+	const struct sensor_trigger *double_tap_trig;
 #endif /* CONFIG_LIS2DU12_TRIGGER */
 };
 
@@ -93,6 +108,12 @@ int lis2du12_trigger_set(const struct device *dev,
 			sensor_trigger_handler_t handler);
 
 int lis2du12_init_interrupt(const struct device *dev);
+
+int lis2du12_set_tap_x_threshold(const struct device *dev, const uint8_t threshold);
+int lis2du12_set_tap_y_threshold(const struct device *dev, const uint8_t threshold);
+int lis2du12_set_tap_z_threshold(const struct device *dev, const uint8_t threshold);
+int lis2du12_set_tap_all_threshold(const struct device *dev, const uint8_t threshold);
+
 #endif
 
 #endif /* ZEPHYR_DRIVERS_SENSOR_LIS2DU12_LIS2DU12_H_ */

@@ -95,3 +95,40 @@ properties:
     description: |
       Selects the pulsed mode for data-ready interrupt when enabled,
       and the latched mode when disabled.
+
+  # Added custom properties for tap detection
+  tap-x-en:
+    type: int
+    description: Enable tap detection on X-axis.
+
+  tap-y-en:
+    type: int
+    description: Enable tap detection on Y-axis.
+
+  tap-z-en:
+    type: int
+    description: Enable tap detection on Z-axis.
+
+  tap-mode:
+    type: int
+    description: Tap mode configuration.
+
+  tap-threshold:
+    type: array
+    description: Tap threshold for X, Y, and Z axes.
+
+  tap-shock:
+    type: int
+    description: Tap shock time window.
+
+  tap-latency:
+    type: int
+    description: Tap latency time.
+
+  tap-quiet:
+    type: int
+    description: Tap quiet time.
+
+  tap-axis-priority:
+    type: int
+    description: Tap axis priority setting.
